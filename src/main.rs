@@ -72,10 +72,42 @@ where
 
     fn emit_char(&mut self, c: char) -> Result<(), E> {
         match c {
+            'a' => self.dit()?.dah()?,
+            'b' => self.dah()?.dit()?.dit()?.dit()?,
+            'c' => self.dah()?.dit()?.dah()?.dit()?,
+            'd' => self.dah()?.dit()?.dit()?,
+            'e' => self.dit()?,
+            'f' => self.dit()?.dit()?.dah()?.dit()?,
             'g' => self.dah()?.dah()?.dit()?,
+            'h' => self.dit()?.dit()?.dit()?.dit()?,
+            'i' => self.dit()?.dit()?,
+            'j' => self.dit()?.dah()?.dah()?.dah()?,
+            'k' => self.dah()?.dit()?.dah()?,
+            'l' => self.dit()?.dah()?.dit()?.dit()?,
             'm' => self.dah()?.dah()?,
+            'n' => self.dah()?.dit()?,
             'o' => self.dah()?.dah()?.dah()?,
+            'p' => self.dit()?.dah()?.dah()?.dit()?,
+            'q' => self.dah()?.dah()?.dit()?.dah()?,
+            'r' => self.dit()?.dah()?.dit()?,
             's' => self.dit()?.dit()?.dit()?,
+            't' => self.dah()?,
+            'u' => self.dit()?.dit()?.dah()?,
+            'v' => self.dit()?.dit()?.dit()?.dah()?,
+            'w' => self.dit()?.dah()?.dah()?,
+            'x' => self.dah()?.dit()?.dit()?.dah()?,
+            'y' => self.dah()?.dit()?.dah()?.dah()?,
+            'z' => self.dah()?.dah()?.dit()?.dah()?,
+            '1' => self.dit()?.dah()?.dah()?.dah()?.dah()?,
+            '2' => self.dit()?.dit()?.dah()?.dah()?.dah()?,
+            '3' => self.dit()?.dit()?.dit()?.dah()?.dah()?,
+            '4' => self.dit()?.dit()?.dit()?.dit()?.dah()?,
+            '5' => self.dit()?.dit()?.dit()?.dit()?.dit()?,
+            '6' => self.dah()?.dit()?.dit()?.dit()?.dit()?,
+            '7' => self.dah()?.dah()?.dit()?.dit()?.dit()?,
+            '8' => self.dah()?.dah()?.dah()?.dit()?.dit()?,
+            '9' => self.dah()?.dah()?.dah()?.dah()?.dit()?,
+            '0' => self.dah()?.dah()?.dah()?.dah()?.dah()?,
             _ => self,
         }
         .ics();
@@ -101,6 +133,6 @@ fn main() -> ! {
 
     ufmt::uwriteln!(&mut serial, "Yo Monde!\n").void_unwrap();
     loop {
-        morser.emit_string("SOS omg").unwrap();
+        morser.emit_string("SOS omg. Hello World! ").unwrap();
     }
 }
