@@ -16,6 +16,7 @@ where
     P: OutputPin<Error = E>,
 {
     led: &'l mut P,
+    waited: bool,
 }
 
 impl<'l, P, E> Morser<'l, P, E>
@@ -24,71 +25,60 @@ where
     E: core::fmt::Debug,
 {
     fn new(led: &'l mut P) -> Self {
-        let m = Self { led };
+        let m = Self { led, waited: true };
         m.led.set_low().unwrap();
         m
     }
 
+    fn dit(&mut self) -> Result<&mut Self, E> {
+        if !self.waited {
+            arduino_hal::delay_ms(T_DIT_MS);
+        }
+        self.led.set_high()?;
+        arduino_hal::delay_ms(T_DIT_MS);
+        self.led.set_low()?;
+        self.waited = false;
+        Ok(self)
+    }
+
+    fn dah(&mut self) -> Result<&mut Self, E> {
+        if !self.waited {
+            arduino_hal::delay_ms(T_DIT_MS);
+        }
+        self.led.set_high()?;
+        arduino_hal::delay_ms(T_DAH_MS);
+        self.led.set_low()?;
+        self.waited = false;
+        Ok(self)
+    }
+
+    fn ics(&mut self) {
+        if self.waited {
+            arduino_hal::delay_ms(T_ICS_MS - T_DIT_MS);
+        } else {
+            arduino_hal::delay_ms(T_ICS_MS);
+        }
+        self.waited = true;
+    }
+
+    fn iws(&mut self) {
+        if self.waited {
+            arduino_hal::delay_ms(T_IWS_MS - T_DIT_MS);
+        } else {
+            arduino_hal::delay_ms(T_IWS_MS);
+        }
+        self.waited = true;
+    }
+
     fn emit_char(&mut self, c: char) -> Result<(), E> {
         match c {
-            'g' => {
-                // - - .
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_low()?;
-            }
-            'm' => {
-                // - -
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-            }
-            'o' => {
-                // - - -
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DAH_MS);
-                self.led.set_low()?;
-            }
-
-            's' => {
-                // . . .
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_low()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_high()?;
-                arduino_hal::delay_ms(T_DIT_MS);
-                self.led.set_low()?;
-            }
-            _ => {
-                arduino_hal::delay_ms(T_IWS_MS - T_ICS_MS);
-            }
+            'g' => self.dah()?.dah()?.dit()?,
+            'm' => self.dah()?.dah()?,
+            'o' => self.dah()?.dah()?.dah()?,
+            's' => self.dit()?.dit()?.dit()?,
+            _ => self,
         }
-        arduino_hal::delay_ms(T_ICS_MS);
+        .ics();
         Ok(())
     }
 
@@ -96,7 +86,7 @@ where
         for char in text.chars() {
             self.emit_char(char.to_ascii_lowercase())?;
         }
-        arduino_hal::delay_ms(T_IWS_MS);
+        self.iws();
         Ok(())
     }
 }
