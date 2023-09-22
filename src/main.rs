@@ -11,12 +11,135 @@ const T_DAH_MS: u16 = 3 * T_DIT_MS;
 const T_ICS_MS: u16 = 3 * T_DIT_MS;
 const T_IWS_MS: u16 = 7 * T_DIT_MS;
 
+/// The morse-code for a single character
+#[derive(Copy, Clone)]
+struct MorseChar {
+    /// The number of dot or dash signals in this encoding.
+    count: u8,
+    /// The least significant `count` bits represent, starting with the LSB.
+    /// A 0 represents dot and 1 represents dash.
+    signal: u8,
+}
+
+impl MorseChar {
+    /// Construct a `MorseChar` from a string representation
+    /// consisting of only '.' (dot) and '-' (dash) characters.
+    const fn from_str(s: &str) -> Self {
+        // Iterating over the characters of a string in a `const fn` is challenging.
+        assert!(s.len() <= 8);
+        let s_bytes = s.as_bytes();
+        assert!(s.len() == s_bytes.len());
+        let mut count: u8 = 0;
+        let mut signal: u8 = 0;
+        while (count as usize) < s_bytes.len() {
+            signal |= (match s_bytes[count as usize] {
+                b'.' => 0,
+                b'-' => 1,
+                _ => panic!("Not a valid morse code string"),
+            } << count);
+            count += 1;
+        }
+        Self { count, signal }
+    }
+
+    fn emit<P, E>(self, led: &mut P) -> Result<(), E>
+    where
+        P: OutputPin<Error = E>,
+        E: core::fmt::Debug,
+    {
+        if self.count == 0 {
+            arduino_hal::delay_ms(T_IWS_MS);
+            return Ok(());
+        }
+        let mut signal = self.signal;
+        for ix in 0..self.count {
+            if ix != 0 {
+                arduino_hal::delay_ms(T_DIT_MS);
+            }
+            led.set_high()?;
+            arduino_hal::delay_ms(match signal & 1 {
+                0 => T_DIT_MS,
+                _ => T_DAH_MS,
+            });
+            led.set_low()?;
+            signal >>= 1;
+        }
+        arduino_hal::delay_ms(T_ICS_MS);
+        Ok(())
+    }
+}
+
+macro_rules! morse_table {
+    ($($c:expr => $m:expr,)*) => {
+        {
+            let no_code = MorseChar {
+                count: 0,
+                signal: 0,
+            };
+            let mut table = [no_code; 128];
+            $(table[$c as usize] = MorseChar::from_str($m);)*
+            table
+        }
+    };
+}
+
+const MORSE_CODES: [MorseChar; 128] = morse_table!(
+    'a' => ".-",
+    'b' => "-...",
+    'c' => "-.-.",
+    'd' => "-..",
+    'e' => ".",
+    'f' => "..-.",
+    'g' => "--.",
+    'h' => "....",
+    'i' => "..",
+    'j' => ".---",
+    'k' => "-.-",
+    'l' => ".-..",
+    'm' => "--",
+    'n' => "-.",
+    'o' => "---",
+    'p' => ".--.",
+    'q' => "--.-",
+    'r' => ".-.",
+    's' => "...",
+    't' => "-",
+    'u' => "..-",
+    'v' => "...-",
+    'w' => ".--",
+    'x' => "-..-",
+    'y' => "-.--",
+    'z' => "--.-",
+    '1' => ".----",
+    '2' => "..---",
+    '3' => "...--",
+    '4' => "....-",
+    '5' => ".....",
+    '6' => "-....",
+    '7' => "--...",
+    '8' => "---..",
+    '9' => "----.",
+    '0' => "-----",
+    '.' => ".-.-.-",
+    ',' => "--..--",
+    ':' => "---...",
+    '?' => "..--..",
+    '\'' => ".----.",
+    '-' => "-....-",
+    '/' => "-..-.",
+    '(' => "-..-.",
+    ')' => "-.--.-",
+    '"' => ".-..-.",
+    '+' => ".-.-.",
+    '*' => "-..-",
+    '@' => ".--.-.",
+);
+
 struct Morser<'l, P, E>
 where
     P: OutputPin<Error = E>,
 {
     led: &'l mut P,
-    waited: bool,
 }
 
 impl<'l, P, E> Morser<'l, P, E>
@@ -25,100 +148,15 @@ where
     E: core::fmt::Debug,
 {
     fn new(led: &'l mut P) -> Self {
-        let m = Self { led, waited: true };
+        let m = Self { led };
         m.led.set_low().unwrap();
         m
     }
 
-    fn dit(&mut self) -> Result<&mut Self, E> {
-        if !self.waited {
-            arduino_hal::delay_ms(T_DIT_MS);
-        }
-        self.led.set_high()?;
-        arduino_hal::delay_ms(T_DIT_MS);
-        self.led.set_low()?;
-        self.waited = false;
-        Ok(self)
-    }
-
-    fn dah(&mut self) -> Result<&mut Self, E> {
-        if !self.waited {
-            arduino_hal::delay_ms(T_DIT_MS);
-        }
-        self.led.set_high()?;
-        arduino_hal::delay_ms(T_DAH_MS);
-        self.led.set_low()?;
-        self.waited = false;
-        Ok(self)
-    }
-
-    fn ics(&mut self) {
-        if self.waited {
-            arduino_hal::delay_ms(T_ICS_MS - T_DIT_MS);
-        } else {
-            arduino_hal::delay_ms(T_ICS_MS);
-        }
-        self.waited = true;
-    }
-
-    fn iws(&mut self) {
-        if self.waited {
-            arduino_hal::delay_ms(T_IWS_MS - T_DIT_MS);
-        } else {
-            arduino_hal::delay_ms(T_IWS_MS);
-        }
-        self.waited = true;
-    }
-
-    fn emit_char(&mut self, c: char) -> Result<(), E> {
-        match c {
-            'a' => self.dit()?.dah()?,
-            'b' => self.dah()?.dit()?.dit()?.dit()?,
-            'c' => self.dah()?.dit()?.dah()?.dit()?,
-            'd' => self.dah()?.dit()?.dit()?,
-            'e' => self.dit()?,
-            'f' => self.dit()?.dit()?.dah()?.dit()?,
-            'g' => self.dah()?.dah()?.dit()?,
-            'h' => self.dit()?.dit()?.dit()?.dit()?,
-            'i' => self.dit()?.dit()?,
-            'j' => self.dit()?.dah()?.dah()?.dah()?,
-            'k' => self.dah()?.dit()?.dah()?,
-            'l' => self.dit()?.dah()?.dit()?.dit()?,
-            'm' => self.dah()?.dah()?,
-            'n' => self.dah()?.dit()?,
-            'o' => self.dah()?.dah()?.dah()?,
-            'p' => self.dit()?.dah()?.dah()?.dit()?,
-            'q' => self.dah()?.dah()?.dit()?.dah()?,
-            'r' => self.dit()?.dah()?.dit()?,
-            's' => self.dit()?.dit()?.dit()?,
-            't' => self.dah()?,
-            'u' => self.dit()?.dit()?.dah()?,
-            'v' => self.dit()?.dit()?.dit()?.dah()?,
-            'w' => self.dit()?.dah()?.dah()?,
-            'x' => self.dah()?.dit()?.dit()?.dah()?,
-            'y' => self.dah()?.dit()?.dah()?.dah()?,
-            'z' => self.dah()?.dah()?.dit()?.dah()?,
-            '1' => self.dit()?.dah()?.dah()?.dah()?.dah()?,
-            '2' => self.dit()?.dit()?.dah()?.dah()?.dah()?,
-            '3' => self.dit()?.dit()?.dit()?.dah()?.dah()?,
-            '4' => self.dit()?.dit()?.dit()?.dit()?.dah()?,
-            '5' => self.dit()?.dit()?.dit()?.dit()?.dit()?,
-            '6' => self.dah()?.dit()?.dit()?.dit()?.dit()?,
-            '7' => self.dah()?.dah()?.dit()?.dit()?.dit()?,
-            '8' => self.dah()?.dah()?.dah()?.dit()?.dit()?,
-            '9' => self.dah()?.dah()?.dah()?.dah()?.dit()?,
-            '0' => self.dah()?.dah()?.dah()?.dah()?.dah()?,
-            _ => self,
-        }
-        .ics();
-        Ok(())
-    }
-
     fn emit_string(&mut self, text: &str) -> Result<(), E> {
         for char in text.chars() {
-            self.emit_char(char.to_ascii_lowercase())?;
+            MORSE_CODES[char.to_ascii_lowercase() as usize].emit(self.led)?;
         }
-        self.iws();
         Ok(())
     }
 }
