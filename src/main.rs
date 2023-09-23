@@ -5,6 +5,9 @@ use arduino_hal::prelude::*;
 use embedded_hal::digital::v2::OutputPin;
 use panic_halt as _;
 
+const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 const WPM: u16 = 10;
 const T_DIT_MS: u16 = (60000) / (50 * WPM);
 const T_DAH_MS: u16 = 3 * T_DIT_MS;
@@ -47,10 +50,11 @@ impl MorseChar {
         self.count == 0
     }
 
-    fn emit<P, E>(self, led: &mut P) -> Result<(), E>
+    fn emit<P, E, W>(self, led: &mut P, writer: &mut W) -> Result<(), E>
     where
         P: OutputPin<Error = E>,
         E: core::fmt::Debug,
+        W: ufmt::uWrite<Error = void::Void>,
     {
         let mut signal = self.signal;
         for ix in 0..self.count {
@@ -59,12 +63,19 @@ impl MorseChar {
             }
             led.set_high()?;
             arduino_hal::delay_ms(match signal & 1 {
-                0 => T_DIT_MS,
-                _ => T_DAH_MS,
+                0 => {
+                    ufmt::uwrite!(writer, "DOT ").void_unwrap();
+                    T_DIT_MS
+                }
+                _ => {
+                    ufmt::uwrite!(writer, "DASH ").void_unwrap();
+                    T_DAH_MS
+                }
             });
             led.set_low()?;
             signal >>= 1;
         }
+        ufmt::uwrite!(writer, "\n").void_unwrap();
         Ok(())
     }
 }
@@ -135,42 +146,49 @@ const MORSE_CODES: [MorseChar; 128] = morse_table!(
     '@' => ".--.-.",
 );
 
-struct Morser<'l, P, E>
+struct Morser<'l, P, E, W>
 where
     P: OutputPin<Error = E>,
+    W: ufmt::uWrite<Error = void::Void>,
 {
     led: &'l mut P,
     want_iws: bool,
+    writer: &'l mut W,
 }
 
-impl<'l, P, E> Morser<'l, P, E>
+impl<'l, P, E, W> Morser<'l, P, E, W>
 where
     P: OutputPin<Error = E>,
     E: core::fmt::Debug,
+    W: ufmt::uWrite<Error = void::Void>,
 {
-    fn new(led: &'l mut P) -> Self {
+    fn new(led: &'l mut P, writer: &'l mut W) -> Self {
         let m = Self {
             led,
             want_iws: false,
+            writer,
         };
         m.led.set_low().unwrap();
+        ufmt::uwriteln!(m.writer, "Starting {} {}.\n", PKG_NAME, PKG_VERSION).void_unwrap();
         m
     }
 
     fn emit_code(&mut self, code: MorseChar) -> Result<(), E> {
         if code.is_space() {
+            ufmt::uwrite!(self.writer, "SPACE\n").void_unwrap();
             // Consecutive spaces only generate one IWS.
             self.want_iws = true;
         } else {
             arduino_hal::delay_ms(if self.want_iws { T_IWS_MS } else { T_ICS_MS });
             self.want_iws = false;
-            code.emit(self.led)?;
+            code.emit(self.led, self.writer)?;
         }
         Ok(())
     }
 
     fn emit_string(&mut self, text: &str) -> Result<(), E> {
         for c in text.chars() {
+            ufmt::uwrite!(self.writer, "'{}': ", c).void_unwrap();
             self.emit_code(MORSE_CODES[c.to_ascii_lowercase() as usize])?;
         }
         Ok(())
@@ -183,9 +201,8 @@ fn main() -> ! {
     let pins = arduino_hal::pins!(dp);
     let mut led_pin = pins.d13.into_output();
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
-    let mut morser = Morser::new(&mut led_pin);
+    let mut morser = Morser::new(&mut led_pin, &mut serial);
 
-    ufmt::uwriteln!(&mut serial, "Yo Monde!\n").void_unwrap();
     loop {
         morser.emit_string("SOS omg. Hello World! ").unwrap();
     }
