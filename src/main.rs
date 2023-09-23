@@ -42,15 +42,16 @@ impl MorseChar {
         Self { count, signal }
     }
 
+    fn is_space(self) -> bool {
+        // Treat all unknown characters (including ' ') as spaces.
+        self.count == 0
+    }
+
     fn emit<P, E>(self, led: &mut P) -> Result<(), E>
     where
         P: OutputPin<Error = E>,
         E: core::fmt::Debug,
     {
-        if self.count == 0 {
-            arduino_hal::delay_ms(T_IWS_MS);
-            return Ok(());
-        }
         let mut signal = self.signal;
         for ix in 0..self.count {
             if ix != 0 {
@@ -64,7 +65,6 @@ impl MorseChar {
             led.set_low()?;
             signal >>= 1;
         }
-        arduino_hal::delay_ms(T_ICS_MS);
         Ok(())
     }
 }
@@ -140,6 +140,7 @@ where
     P: OutputPin<Error = E>,
 {
     led: &'l mut P,
+    want_iws: bool,
 }
 
 impl<'l, P, E> Morser<'l, P, E>
@@ -148,14 +149,29 @@ where
     E: core::fmt::Debug,
 {
     fn new(led: &'l mut P) -> Self {
-        let m = Self { led };
+        let m = Self {
+            led,
+            want_iws: false,
+        };
         m.led.set_low().unwrap();
         m
     }
 
+    fn emit_code(&mut self, code: MorseChar) -> Result<(), E> {
+        if code.is_space() {
+            // Consecutive spaces only generate one IWS.
+            self.want_iws = true;
+        } else {
+            arduino_hal::delay_ms(if self.want_iws { T_IWS_MS } else { T_ICS_MS });
+            self.want_iws = false;
+            code.emit(self.led)?;
+        }
+        Ok(())
+    }
+
     fn emit_string(&mut self, text: &str) -> Result<(), E> {
-        for char in text.chars() {
-            MORSE_CODES[char.to_ascii_lowercase() as usize].emit(self.led)?;
+        for c in text.chars() {
+            self.emit_code(MORSE_CODES[c.to_ascii_lowercase() as usize])?;
         }
         Ok(())
     }
