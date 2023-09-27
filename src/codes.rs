@@ -39,19 +39,26 @@ impl MorseChar {
         self.count == 0
     }
 
+    fn shift(self) -> Self {
+        Self {
+            count: self.count - 1,
+            signal: self.signal >> 1,
+        }
+    }
+
     pub fn emit<P, E, W>(self, led: &mut P, writer: &mut W) -> Result<(), E>
     where
         P: OutputPin<Error = E>,
         E: core::fmt::Debug,
         W: ufmt::uWrite<Error = void::Void>,
     {
-        let mut signal = self.signal;
-        for ix in 0..self.count {
-            if ix != 0 {
+        let mut to_emit = self;
+        while to_emit.count > 0 {
+            if to_emit.count != self.count {
                 arduino_hal::delay_ms(T_DIT_MS);
             }
             led.set_high()?;
-            arduino_hal::delay_ms(match signal & 1 {
+            arduino_hal::delay_ms(match to_emit.signal & 1 {
                 0 => {
                     ufmt::uwrite!(writer, "DOT ").void_unwrap();
                     T_DIT_MS
@@ -62,7 +69,7 @@ impl MorseChar {
                 }
             });
             led.set_low()?;
-            signal >>= 1;
+            to_emit = to_emit.shift();
         }
         ufmt::uwrite!(writer, "\n").void_unwrap();
         Ok(())
