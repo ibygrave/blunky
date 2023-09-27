@@ -38,12 +38,35 @@ impl MorseChar {
         // Treat all unknown characters (including ' ') as spaces.
         self.count == 0
     }
+}
 
-    fn shift(self) -> Self {
-        Self {
-            count: self.count - 1,
-            signal: self.signal >> 1,
+struct MorseCharIter(MorseChar);
+
+enum MorseSignal {
+    Dot,
+    Dash,
+}
+
+impl core::iter::Iterator for MorseCharIter {
+    type Item = MorseSignal;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0.count == 0 {
+            return None;
         }
+        let item = match self.0.signal & 1 {
+            0 => MorseSignal::Dot,
+            _ => MorseSignal::Dash,
+        };
+        self.0.count -= 1;
+        self.0.signal >>= 1;
+        Some(item)
+    }
+}
+
+impl MorseChar {
+    fn signal_iter(self) -> MorseCharIter {
+        MorseCharIter(self)
     }
 
     pub fn emit<P, E, W>(self, led: &mut P, writer: &mut W) -> Result<(), E>
@@ -52,24 +75,24 @@ impl MorseChar {
         E: core::fmt::Debug,
         W: ufmt::uWrite<Error = void::Void>,
     {
-        let mut to_emit = self;
-        while to_emit.count > 0 {
-            if to_emit.count != self.count {
+        let mut space = false;
+        for signal in self.signal_iter() {
+            if space {
                 arduino_hal::delay_ms(T_DIT_MS);
             }
             led.set_high()?;
-            arduino_hal::delay_ms(match to_emit.signal & 1 {
-                0 => {
+            arduino_hal::delay_ms(match signal {
+                MorseSignal::Dot => {
                     ufmt::uwrite!(writer, "DOT ").void_unwrap();
                     T_DIT_MS
                 }
-                _ => {
+                MorseSignal::Dash => {
                     ufmt::uwrite!(writer, "DASH ").void_unwrap();
                     T_DAH_MS
                 }
             });
             led.set_low()?;
-            to_emit = to_emit.shift();
+            space = true;
         }
         ufmt::uwrite!(writer, "\n").void_unwrap();
         Ok(())
