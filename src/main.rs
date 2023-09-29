@@ -1,9 +1,12 @@
 #![no_std]
 #![no_main]
 
+use core::fmt::Write;
+use heapless::String;
 use panic_halt as _;
 
 mod codes;
+mod fizzbuzz;
 mod morser;
 mod timing;
 
@@ -14,8 +17,13 @@ fn main() -> ! {
     let mut led_pin = pins.d13.into_output();
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
     let mut morser = morser::Morser::new(&mut led_pin, &mut serial);
+    let mut sbuf: String<22> = String::new();
 
     loop {
-        morser.emit_string("SOS omg. Hello World! ").unwrap();
+        for fb in fizzbuzz::FizzBuzzIter::default() {
+            sbuf.clear();
+            write!(&mut sbuf, "{fb} ").unwrap();
+            morser.emit_string(&sbuf).unwrap();
+        }
     }
 }
