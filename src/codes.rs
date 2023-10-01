@@ -1,5 +1,5 @@
 use embedded_hal::digital::v2::OutputPin;
-use void::ResultVoidExt;
+use log::info;
 
 use crate::timing::{T_DAH_MS, T_DIT_MS};
 
@@ -69,11 +69,10 @@ impl MorseChar {
         MorseCharIter(self)
     }
 
-    pub fn emit<P, E, W>(self, led: &mut P, writer: &mut W) -> Result<(), E>
+    pub fn emit<P, E>(self, led: &mut P) -> Result<(), E>
     where
         P: OutputPin<Error = E>,
         E: core::fmt::Debug,
-        W: ufmt::uWrite<Error = void::Void>,
     {
         let mut space = false;
         for signal in self.signal_iter() {
@@ -83,18 +82,17 @@ impl MorseChar {
             led.set_high()?;
             arduino_hal::delay_ms(match signal {
                 MorseSignal::Dot => {
-                    ufmt::uwrite!(writer, "DOT ").void_unwrap();
+                    info!("DOT");
                     T_DIT_MS
                 }
                 MorseSignal::Dash => {
-                    ufmt::uwrite!(writer, "DASH ").void_unwrap();
+                    info!("DASH");
                     T_DAH_MS
                 }
             });
             led.set_low()?;
             space = true;
         }
-        ufmt::uwrite!(writer, "\n").void_unwrap();
         Ok(())
     }
 }
