@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "arduino-hal"
 version = "0.1.0"
-source = "git+https://github.com/rahix/avr-hal#7b3e82a15e97e657559ec82cf934ba36c38312ec"
+source = "git+https://github.com/rahix/avr-hal#01029ae813506352a9c4fb847c930644b8652a90"
 dependencies = [
  "atmega-hal",
  "avr-device",
@@ -19,7 +19,7 @@ dependencies = [
 [[package]]
 name = "atmega-hal"
 version = "0.1.0"
-source = "git+https://github.com/rahix/avr-hal#7b3e82a15e97e657559ec82cf934ba36c38312ec"
+source = "git+https://github.com/rahix/avr-hal#01029ae813506352a9c4fb847c930644b8652a90"
 dependencies = [
  "avr-device",
  "avr-hal-generic",
@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "avr-hal-generic"
 version = "0.1.0"
-source = "git+https://github.com/rahix/avr-hal#7b3e82a15e97e657559ec82cf934ba36c38312ec"
+source = "git+https://github.com/rahix/avr-hal#01029ae813506352a9c4fb847c930644b8652a90"
 dependencies = [
  "avr-device",
  "cfg-if 0.1.10",
@@ -164,9 +164,9 @@ dependencies = [
 
 [[package]]
 name = "lock_api"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1cc9717a20b1bb222f333e6a92fd32f7d8a18ddc5a3191a11af45dcbf4dcd16"
+checksum = "3c168f8615b12bc01f9c17e2eb0cc07dcae1940121185446edc3744920e8ef45"
 dependencies = [
  "autocfg",
  "scopeguard",
