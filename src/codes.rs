@@ -1,6 +1,6 @@
-use embedded_hal::digital::v2::OutputPin;
-use log::info;
+use core::fmt::Write;
 
+use crate::info;
 use crate::timing::{T_DAH_MS, T_DIT_MS};
 
 /// The morse-code for a single character
@@ -69,31 +69,26 @@ impl MorseChar {
         MorseCharIter(self)
     }
 
-    pub fn emit<P, E>(self, led: &mut P) -> Result<(), E>
-    where
-        P: OutputPin<Error = E>,
-        E: core::fmt::Debug,
-    {
+    pub fn emit(self, led: &crate::led::Led) {
         let mut space = false;
         for signal in self.signal_iter() {
             if space {
-                arduino_hal::delay_ms(T_DIT_MS);
+                crate::delay::delay_ms(T_DIT_MS);
             }
-            led.set_high()?;
-            arduino_hal::delay_ms(match signal {
+            led.on();
+            crate::delay::delay_ms(match signal {
                 MorseSignal::Dot => {
-                    info!("DOT");
+                    info!(" DOT");
                     T_DIT_MS
                 }
                 MorseSignal::Dash => {
-                    info!("DASH");
+                    info!(" DASH");
                     T_DAH_MS
                 }
             });
-            led.set_low()?;
+            led.off();
             space = true;
         }
-        Ok(())
     }
 }
 
