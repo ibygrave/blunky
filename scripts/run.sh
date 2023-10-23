@@ -3,7 +3,7 @@ set -ex
 
 exe=$1
 
-ravedude uno -cb 57600 $exe && exit
+ravedude uno -cb 460800 $exe && exit
 
 echo "Falling back to QEMU"
 

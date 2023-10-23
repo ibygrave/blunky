@@ -4,6 +4,30 @@ pub struct Uart {
     usart: USART0,
 }
 
+struct BaudRate {
+    ubrr: u16,
+    u2x: bool,
+}
+
+impl BaudRate {
+    const fn new(baud: u32) -> Self {
+        let mut ubrr = (16_000_000 / 4 / baud - 1) / 2;
+        let mut u2x = true;
+        debug_assert!(ubrr <= u16::MAX as u32);
+        if ubrr > 4095 {
+            u2x = false;
+            ubrr = (16_000_000 / 8 / baud - 1) / 2;
+        }
+
+        BaudRate {
+            ubrr: ubrr as u16,
+            u2x,
+        }
+    }
+}
+
+const BAUDRATE: BaudRate = BaudRate::new(460800);
+
 impl Uart {
     pub fn new(usart: USART0) -> Self {
         let uart = Self { usart };
@@ -13,9 +37,8 @@ impl Uart {
 
     fn init(&self) {
         // Init serial
-        // baudrate 57600 16MHz clock, ubrr = (clock_freq / 4 / baud - 1) / 2;
-        self.usart.ubrr0.write(|w| w.bits(34));
-        self.usart.ucsr0a.write(|w| w.u2x0().bit(true));
+        self.usart.ubrr0.write(|w| w.bits(BAUDRATE.ubrr));
+        self.usart.ucsr0a.write(|w| w.u2x0().bit(BAUDRATE.u2x));
         // Enable receiver and transmitter but leave interrupts disabled.
         self.usart
             .ucsr0b
