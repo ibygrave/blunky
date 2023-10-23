@@ -29,10 +29,7 @@ fn __avr_device_rt_main() -> ! {
     let dp = avr_device::atmega328p::Peripherals::take().unwrap();
     let led = led::Led::new(dp.PORTB);
 
-    // Serial uses D 0 input, D 1 output
-    dp.PORTD.ddrd.write(|w| w.pd0().clear_bit());
-    dp.PORTD.ddrd.write(|w| w.pd1().set_bit());
-    let serial = uart::Uart::new(dp.USART0);
+    let serial = uart::Uart::new(dp.PORTD, dp.USART0);
     serial_logger::init(serial);
 
     let mut morser = morser::Morser::new(led);

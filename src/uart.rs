@@ -1,6 +1,7 @@
-use avr_device::atmega328p::USART0;
+use avr_device::atmega328p::{PORTD, USART0};
 
 pub struct Uart {
+    portd: PORTD,
     usart: USART0,
 }
 
@@ -29,13 +30,16 @@ impl BaudRate {
 const BAUDRATE: BaudRate = BaudRate::new(460800);
 
 impl Uart {
-    pub fn new(usart: USART0) -> Self {
-        let uart = Self { usart };
+    pub fn new(portd: PORTD, usart: USART0) -> Self {
+        let uart = Self { portd, usart };
         uart.init();
         uart
     }
 
     fn init(&self) {
+        // Serial uses D 0 input, D 1 output
+        self.portd.ddrd.write(|w| w.pd0().clear_bit());
+        self.portd.ddrd.write(|w| w.pd1().set_bit());
         // Init serial
         self.usart.ubrr0.write(|w| w.bits(BAUDRATE.ubrr));
         self.usart.ucsr0a.write(|w| w.u2x0().bit(BAUDRATE.u2x));
