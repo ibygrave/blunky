@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter, Result};
 use core::iter::Iterator;
 
 pub enum FizzBuzz {
-    Count(u64),
+    Count(u16),
     Fizz,
     Buzz,
     FizzBuzz,
@@ -21,14 +21,14 @@ impl Display for FizzBuzz {
 
 #[derive(Default)]
 pub struct FizzBuzzIter {
-    count: u64,
+    count: u16,
 }
 
 impl Iterator for FizzBuzzIter {
     type Item = FizzBuzz;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.count == u64::MAX {
+        if self.count == u16::MAX {
             return None;
         }
         self.count += 1;

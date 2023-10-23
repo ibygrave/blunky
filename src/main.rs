@@ -36,7 +36,7 @@ fn __avr_device_rt_main() -> ! {
     serial_logger::init(serial);
 
     let mut morser = morser::Morser::new(led);
-    let mut sbuf: strbuf::StrBuf<22> = strbuf::StrBuf::default();
+    let mut sbuf: strbuf::StrBuf<8> = strbuf::StrBuf::default();
 
     loop {
         for fb in fizzbuzz::FizzBuzzIter::default() {
