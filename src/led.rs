@@ -10,10 +10,10 @@ impl Led {
         portb.ddrb.write(|w| w.pb5().set_bit());
         Self { portb }
     }
-    pub fn on(&self) {
+    pub fn off(&self) {
         self.portb.portb.write(|w| w.pb5().clear_bit());
     }
-    pub fn off(&self) {
+    pub fn on(&self) {
         self.portb.portb.write(|w| w.pb5().set_bit());
     }
 }
