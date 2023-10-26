@@ -15,7 +15,7 @@ pedantic = "warn"
 
 [dependencies.avr-device]
 version = "0.5.4"
-features = ["atmega328p"]
+features = ["atmega328p", "rt"]
 
 # Configure the build for minimal size - AVRs have very little program memory
 [profile.dev]

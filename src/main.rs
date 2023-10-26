@@ -1,14 +1,16 @@
 #![no_std]
 #![no_main]
+#![feature(asm_experimental_arch)]
+#![feature(abi_avr_interrupt)]
 
 use core::fmt::Write;
 
 mod codes;
-mod delay;
 mod fizzbuzz;
 mod led;
 mod morser;
 mod panic;
+mod timer;
 mod timing;
 mod uart;
 
@@ -25,7 +27,9 @@ fn __avr_device_rt_main() -> ! {
     let dp = avr_device::atmega328p::Peripherals::take().unwrap();
     let led = led::Led::new(dp.PORTB);
 
-    uart::init(dp.PORTD, dp.USART0);
+    timer::init(&dp.TC0);
+    uart::init(&dp.PORTD, dp.USART0);
+    unsafe { avr_device::interrupt::enable() };
 
     let mut morser = morser::Morser::new(led);
 

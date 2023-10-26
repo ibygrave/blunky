@@ -1,4 +1,5 @@
 use crate::info;
+use crate::timer::delay_ms;
 
 use core::fmt::Write;
 
@@ -30,7 +31,7 @@ impl Morser {
             // Consecutive spaces only generate one IWS.
             self.want_iws = true;
         } else {
-            crate::delay::wait_ms(if self.want_iws { T_IWS_MS } else { T_ICS_MS });
+            delay_ms(if self.want_iws { T_IWS_MS } else { T_ICS_MS });
             self.want_iws = false;
             code.emit(&self.led);
             info!("\n");
