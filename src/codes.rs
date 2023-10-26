@@ -1,6 +1,7 @@
 use core::fmt::Write;
 
 use crate::info;
+use crate::timer::delay_ms;
 use crate::timing::{T_DAH_MS, T_DIT_MS};
 
 /// The morse-code for a single character
@@ -73,10 +74,10 @@ impl MorseChar {
         let mut space = false;
         for signal in self.signal_iter() {
             if space {
-                crate::delay::wait_ms(T_DIT_MS);
+                delay_ms(T_DIT_MS);
             }
             led.on();
-            crate::delay::wait_ms(match signal {
+            delay_ms(match signal {
                 MorseSignal::Dot => {
                     info!(" DOT");
                     T_DIT_MS
