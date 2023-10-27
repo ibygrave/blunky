@@ -11,7 +11,6 @@ mod fizzbuzz;
 mod led;
 mod morser;
 mod panic;
-mod serial_logger;
 mod strbuf;
 mod timing;
 mod uart;
@@ -29,8 +28,7 @@ fn __avr_device_rt_main() -> ! {
     let dp = avr_device::atmega328p::Peripherals::take().unwrap();
     let led = led::Led::new(dp.PORTB);
 
-    let serial = uart::Uart::new(dp.PORTD, dp.USART0);
-    serial_logger::init(serial);
+    uart::init(dp.PORTD, dp.USART0);
 
     let mut morser = morser::Morser::new(led);
     let mut sbuf: strbuf::StrBuf<9> = strbuf::StrBuf::default();
