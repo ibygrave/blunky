@@ -1,8 +1,8 @@
-use core::cell::RefCell;
-use core::mem::MaybeUninit;
+use core::cell::OnceCell;
 
 use avr_device::atmega328p::{PORTD, USART0};
 
+#[derive(Debug)]
 pub struct Uart {
     portd: PORTD,
     usart: USART0,
@@ -31,17 +31,14 @@ impl BaudRate {
 }
 
 const BAUDRATE: BaudRate = BaudRate::new(460800);
-static mut WRITER: MaybeUninit<RefCell<crate::uart::Uart>> = MaybeUninit::uninit();
+static mut WRITER: OnceCell<crate::uart::Uart> = OnceCell::new();
 
 /// Register a serial uart
 /// SAFETY: This must be called before any logging macros.
 pub fn init(portd: PORTD, usart: USART0) {
     let uart = Uart { portd, usart };
     uart.init();
-    unsafe {
-        WRITER = MaybeUninit::new(RefCell::new(uart));
-        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
-    }
+    unsafe { WRITER.set(uart) }.expect("init failed");
 }
 
 impl Uart {
@@ -92,7 +89,10 @@ pub struct Writer;
 
 impl core::fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        let mut writer = unsafe { WRITER.assume_init_ref().borrow_mut() };
-        writer.write_str(s)
+        if let Some(writer) = unsafe { WRITER.get_mut() } {
+            writer.write_str(s)
+        } else {
+            Err(core::fmt::Error)
+        }
     }
 }
