@@ -23,6 +23,7 @@ impl BaudRate {
             ubrr = (16_000_000 / 8 / baud - 1) / 2;
         }
 
+        #[allow(clippy::cast_possible_truncation)]
         BaudRate {
             ubrr: ubrr as u16,
             u2x,
@@ -30,11 +31,12 @@ impl BaudRate {
     }
 }
 
-const BAUDRATE: BaudRate = BaudRate::new(460800);
+const BAUDRATE: BaudRate = BaudRate::new(460_800);
 static mut WRITER: OnceCell<crate::uart::Uart> = OnceCell::new();
 
 /// Register a serial uart
 /// SAFETY: This must be called before any logging macros.
+#[allow(clippy::similar_names)]
 pub fn init(portd: PORTD, usart: USART0) {
     let uart = Uart { portd, usart };
     uart.init();

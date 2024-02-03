@@ -73,10 +73,10 @@ impl MorseChar {
         let mut space = false;
         for signal in self.signal_iter() {
             if space {
-                crate::delay::delay_ms(T_DIT_MS);
+                crate::delay::wait_ms(T_DIT_MS);
             }
             led.on();
-            crate::delay::delay_ms(match signal {
+            crate::delay::wait_ms(match signal {
                 MorseSignal::Dot => {
                     info!(" DOT");
                     T_DIT_MS

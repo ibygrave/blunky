@@ -1,6 +1,7 @@
 use core::fmt::{Display, Formatter, Result};
 use core::iter::Iterator;
 
+#[allow(clippy::enum_variant_names)]
 pub enum FizzBuzz {
     Count(u16),
     Fizz,
@@ -11,7 +12,7 @@ pub enum FizzBuzz {
 impl Display for FizzBuzz {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            FizzBuzz::Count(c) => write!(f, "{}", c),
+            FizzBuzz::Count(c) => write!(f, "{c}"),
             FizzBuzz::Fizz => write!(f, "Fizz"),
             FizzBuzz::Buzz => write!(f, "Buzz"),
             FizzBuzz::FizzBuzz => write!(f, "FizzBuzz"),
