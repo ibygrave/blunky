@@ -23,6 +23,10 @@ impl BaudRate {
             ubrr = (16_000_000 / 8 / baud - 1) / 2;
         }
 
+        // https://github.com/rust-lang/rust/issues/51999
+        // If that enables `unwrap` in `const fn` then convert to
+        // `u16::try_from(ubrr).unwrap()` to convert overflow to
+        // a build failure.
         #[allow(clippy::cast_possible_truncation)]
         BaudRate {
             ubrr: ubrr as u16,
