@@ -13,23 +13,26 @@ struct BaudRate {
     u2x: bool,
 }
 
+// Eventually u16::try_from(value).unwrap() may be usable in CTFE,
+// which would replace this.
+#[allow(clippy::cast_possible_truncation)]
+const fn u32_as_u16(value: u32) -> u16 {
+    assert!(value >= (u16::MIN as u32));
+    assert!(value <= (u16::MAX as u32));
+    value as u16
+}
+
 impl BaudRate {
     const fn new(baud: u32) -> Self {
         let mut ubrr = (16_000_000 / 4 / baud - 1) / 2;
         let mut u2x = true;
-        debug_assert!(ubrr <= u16::MAX as u32);
         if ubrr > 4095 {
             u2x = false;
             ubrr = (16_000_000 / 8 / baud - 1) / 2;
         }
 
-        // https://github.com/rust-lang/rust/issues/51999
-        // If that enables `unwrap` in `const fn` then convert to
-        // `u16::try_from(ubrr).unwrap()` to convert overflow to
-        // a build failure.
-        #[allow(clippy::cast_possible_truncation)]
         BaudRate {
-            ubrr: ubrr as u16,
+            ubrr: u32_as_u16(ubrr),
             u2x,
         }
     }
