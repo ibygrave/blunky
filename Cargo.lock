@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "avr-device"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9caff6ab631ca48909f0b505bd115a7fee718d1281c8f2995a74cfd316b939ae"
+checksum = "546b09da5e933d18b790ccb5aae351371c6c4f8094a7b011dcd7c7e7fb69cc94"
 dependencies = [
  "bare-metal",
  "cfg-if",
