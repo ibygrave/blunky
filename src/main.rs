@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(asm_experimental_arch)]
 #![feature(ascii_char)]
 
 use core::fmt::Write;
