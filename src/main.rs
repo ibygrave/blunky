@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(ascii_char)]
 
 use core::fmt::Write;
 
