@@ -17,7 +17,7 @@ impl<const N: usize> StrBuf<N> {
         self.cursor = 0;
     }
     pub fn as_str(&self) -> &str {
-        unsafe { core::str::from_utf8_unchecked(&self.buf[..self.cursor]) }
+        core::str::from_utf8(&self.buf[..self.cursor]).unwrap()
     }
 }
 
