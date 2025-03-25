@@ -36,11 +36,14 @@ impl Morser {
             info!("\n");
         }
     }
+}
 
-    pub fn emit_string(&mut self, text: &str) {
-        for c in text.chars() {
+impl core::fmt::Write for Morser {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        for c in s.chars() {
             info!("'{c}':");
             self.emit_code(MORSE_CODES[c.to_ascii_lowercase() as usize]);
         }
+        Ok(())
     }
 }

@@ -9,7 +9,6 @@ mod fizzbuzz;
 mod led;
 mod morser;
 mod panic;
-mod strbuf;
 mod timing;
 mod uart;
 
@@ -29,13 +28,10 @@ fn __avr_device_rt_main() -> ! {
     uart::init(dp.PORTD, dp.USART0);
 
     let mut morser = morser::Morser::new(led);
-    let mut sbuf: strbuf::StrBuf<9> = strbuf::StrBuf::default();
 
     loop {
         for fb in fizzbuzz::FizzBuzzIter::default() {
-            sbuf.clear();
-            write!(&mut sbuf, "{fb} ").unwrap();
-            morser.emit_string(sbuf.as_str());
+            write!(&mut morser, "{fb} ").unwrap();
         }
     }
 }
