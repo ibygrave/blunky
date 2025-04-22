@@ -1,0 +1,4 @@
+[general]
+open-console = true
+serial-baudrate = 460800
+board = "uno"
